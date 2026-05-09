@@ -31,7 +31,7 @@ const RegisterPage = () => {
   } = useForm<RegisterPayload>();
 
   const onSubmit = async (data: RegisterPayload) => {
-    const loadingToast = toast.loading("Login..");
+    const loadingToast = toast.loading("Registrasi..");
     setIsloading(true);
 
     try {
@@ -43,7 +43,7 @@ const RegisterPage = () => {
       });
 
       toast.dismiss(loadingToast);
-      toast.success("Login success");
+      toast.success("Registrasi success, silahkan login!");
 
       setIsloading(false);
 
