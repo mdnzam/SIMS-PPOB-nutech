@@ -8,8 +8,11 @@ import api from "@/services/axios";
 import toast from "react-hot-toast";
 import { CreditCard, Loader2 } from "lucide-react";
 import LoadingSkeleton from "@/components/LoadingSkeleteon";
+import { useDispatch } from "react-redux";
+import { addBalance } from "@/features/balance/balanceSlice";
 
 const PaymentPage = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const { serviceCode } = useParams();
@@ -52,12 +55,15 @@ const PaymentPage = () => {
   const handlePayment = async () => {
     setIsLoading(true);
     try {
-      await api.post("/transaction", {
+      const response = await api.post("/transaction", {
         service_code: service?.service_code,
       });
 
+      const responseData = response.data.data;
+      const paymentAmount = responseData.total_amount * -1;
       setIsLoading(false);
 
+      dispatch(addBalance(paymentAmount));
       toast.success("Pembayaran berhasil");
 
       navigate("/");

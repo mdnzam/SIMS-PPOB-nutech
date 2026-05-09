@@ -4,12 +4,16 @@ import { useAppSelector } from "@/hooks/redux";
 import { toggleBalance } from "@/features/balance/balanceSlice";
 import { useDispatch } from "react-redux";
 import { Eye, EyeOff } from "lucide-react";
+import LoadingSkeleton from "../LoadingSkeleteon";
 
 const ProfileSection = () => {
+  const minioBaseUrl = import.meta.env.VITE_MINIO_ENDPOINT;
   const dispatch = useDispatch();
 
   const profile = useAppSelector((state) => state.profile.profile);
+  const loadingProfile = useAppSelector((state) => state.profile.loading);
   const { balance, showBalance } = useAppSelector((state) => state.balance);
+
   // const [showBalance, setShowBalance] = useState(false);
 
   // useEffect(() => {
@@ -21,23 +25,31 @@ const ProfileSection = () => {
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-10">
       <div>
         <div className="w-20 h-20 rounded-full flex items-center justify-center bg-slate-200 overflow-hidden mb-4">
-          <img
-            className="w-full h-full object-cover"
-            src={
-              profile?.profile_image &&
-              profile.profile_image !==
-                "https://minio.nutech-integrasi.com/take-home-test/null"
-                ? profile.profile_image
-                : defaultProfile
-            }
-            alt="profile"
-          />
+          {loadingProfile ? (
+            <LoadingSkeleton className="w-full h-10" />
+          ) : (
+            <img
+              className="w-full h-full object-cover"
+              src={
+                profile?.profile_image &&
+                profile.profile_image !==
+                  `${minioBaseUrl}/take-home-test/profile/null`
+                  ? profile.profile_image
+                  : defaultProfile
+              }
+              alt="profile"
+            />
+          )}
         </div>
 
         <p className="text-slate-500 text-lg">Selamat datang,</p>
 
         <h2 className="text-4xl font-bold text-slate-900">
-          {profile?.first_name} {profile?.last_name}
+          {loadingProfile ? (
+            <LoadingSkeleton className="w-full h-10" />
+          ) : (
+            `${profile?.first_name} ${profile?.last_name}`
+          )}
         </h2>
       </div>
 
