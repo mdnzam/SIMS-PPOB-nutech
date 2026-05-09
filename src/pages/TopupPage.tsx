@@ -7,15 +7,30 @@ import ProfileSection from "@/components/section/ProfileSection";
 import api from "@/services/axios";
 import { setBalance } from "@/features/balance/balanceSlice";
 import { useDispatch } from "react-redux";
+import ConfirmationModal from "@/components/ConfirmationModal";
+import { useNavigate } from "react-router-dom";
 
 const TopUpPage = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
   const nominalList = [10000, 20000, 50000, 100000, 250000, 500000];
 
-  const [isLoading, setIsloading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const dispatch = useDispatch();
+  //modalconfirm
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirm, setIsConfirm] = useState(true);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+  const [fixedAmount, setFixedAmount] = useState("0");
+
+  const openModalConfirm = () => {
+    setIsModalOpen(true);
+    setFixedAmount(amount);
+  };
 
   const MAX_AMOUNT = 1_000_000;
   const formatRupiah = (value: string) => {
@@ -27,6 +42,34 @@ const TopUpPage = () => {
   const parseAmount = (value: string) => {
     return Number(value.replace(/\D/g, ""));
   };
+
+  const statusConfig = isConfirm
+    ? {
+        title: `${formatRupiah(fixedAmount)} ?`,
+        desc: "Anda yakin untuk Top Up sebesar",
+        suffix: "",
+        footer: "Ya lanjutkan Top Up",
+      }
+    : isSuccess
+      ? {
+          title: formatRupiah(fixedAmount),
+          desc: "Top Up sebesar",
+          suffix: "berhasil!",
+          footer: "Kembali ke beranda",
+        }
+      : isFailed
+        ? {
+            title: formatRupiah(fixedAmount),
+            desc: "Top Up sebesar",
+            suffix: "gagal",
+            footer: "Kembali ke beranda",
+          }
+        : {
+            title: "",
+            desc: "",
+            suffix: "",
+            footer: "",
+          };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, "");
@@ -50,7 +93,13 @@ const TopUpPage = () => {
   };
 
   const handleTopUp = async () => {
+    if (!isConfirm) {
+      navigate("/");
+      setIsModalOpen(false);
+      return;
+    }
     const numericAmount = parseAmount(amount);
+    setFixedAmount(amount);
 
     if (!numericAmount) {
       toast.error("Masukkan nominal top up");
@@ -62,7 +111,7 @@ const TopUpPage = () => {
       return;
     }
 
-    setIsloading(true);
+    setIsLoading(true);
 
     try {
       const response = await api.post("/topup", {
@@ -73,7 +122,10 @@ const TopUpPage = () => {
 
       dispatch(setBalance(newBalance));
 
-      setIsloading(false);
+      setIsLoading(false);
+      setIsConfirm(false);
+      setIsSuccess(true);
+
       toast.success(
         `Top up Rp ${numericAmount.toLocaleString("id-ID")} berhasil`,
       );
@@ -81,8 +133,13 @@ const TopUpPage = () => {
       setAmount("");
       setError("");
     } catch (error: any) {
-      setIsloading(false);
+      setIsLoading(false);
+      setIsConfirm(false);
+      setIsSuccess(false);
+      setIsFailed(true);
       toast.error(error.response?.data?.message || "Pembayaran gagal");
+    } finally {
+      // setIsModalOpen(false);
     }
   };
 
@@ -131,7 +188,8 @@ const TopUpPage = () => {
               </div>
 
               <button
-                onClick={handleTopUp}
+                // onClick={handleTopUp}
+                onClick={() => openModalConfirm()}
                 disabled={!amount || isLoading}
                 className={`
                   w-full 
@@ -178,6 +236,18 @@ const TopUpPage = () => {
               ))}
             </div>
           </div>
+
+          <ConfirmationModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onConfirm={handleTopUp}
+            statusConfig={statusConfig}
+            // amount={fixedAmount}
+            loading={isLoading}
+            isConfirm={isConfirm}
+            isFailed={isFailed}
+            isSuccess={isSuccess}
+          />
         </section>
       </main>
     </MainLayout>

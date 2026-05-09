@@ -10,6 +10,7 @@ import { CreditCard, Loader2 } from "lucide-react";
 import LoadingSkeleton from "@/components/LoadingSkeleteon";
 import { useDispatch } from "react-redux";
 import { addBalance } from "@/features/balance/balanceSlice";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 const PaymentPage = () => {
   const dispatch = useDispatch();
@@ -21,6 +22,48 @@ const PaymentPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+
+  //modal confirm
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirm, setIsConfirm] = useState(true);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+
+  const formatRupiah = (value: string) => {
+    if (!value) return "";
+
+    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const serviceTariff = formatRupiah(String(service?.service_tariff || 0));
+
+  const statusConfig = isConfirm
+    ? {
+        title: `Rp${serviceTariff} ?`,
+        desc: `Beli ${service?.service_name} senilai`,
+        suffix: "",
+        footer: "Ya, lanjutkan Bayar",
+      }
+    : isSuccess
+      ? {
+          title: `Rp${serviceTariff}`,
+          desc: `Pembayaran ${service?.service_name} sebesar`,
+          suffix: "berhasil!",
+          footer: "Kembali ke beranda",
+        }
+      : isFailed
+        ? {
+            title: `Rp${serviceTariff}`,
+            desc: `Pembayaran ${service?.service_name} sebesar`,
+            suffix: "gagal",
+            footer: "Kembali ke beranda",
+          }
+        : {
+            title: "",
+            desc: "",
+            suffix: "",
+            footer: "",
+          };
 
   const getService = async () => {
     try {
@@ -53,6 +96,12 @@ const PaymentPage = () => {
   };
 
   const handlePayment = async () => {
+    if (!isConfirm) {
+      navigate("/");
+      setIsModalOpen(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await api.post("/transaction", {
@@ -61,14 +110,18 @@ const PaymentPage = () => {
 
       const responseData = response.data.data;
       const paymentAmount = responseData.total_amount * -1;
+
       setIsLoading(false);
+      setIsConfirm(false);
+      setIsSuccess(true);
 
       dispatch(addBalance(paymentAmount));
       toast.success("Pembayaran berhasil");
-
-      navigate("/");
     } catch (error: any) {
       setIsLoading(false);
+      setIsConfirm(false);
+      setIsSuccess(false);
+      setIsFailed(true);
 
       toast.error(error.response?.data?.message || "Pembayaran gagal");
     }
@@ -136,7 +189,7 @@ const PaymentPage = () => {
             </div>
 
             <button
-              onClick={handlePayment}
+              onClick={() => setIsModalOpen(true)}
               className={`
               w-full
               text-white cursor-pointer flex items-center justify-center 
@@ -155,6 +208,17 @@ const PaymentPage = () => {
               )}
             </button>
           </div>
+
+          <ConfirmationModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onConfirm={handlePayment}
+            statusConfig={statusConfig}
+            loading={isLoading}
+            isConfirm={isConfirm}
+            isFailed={isFailed}
+            isSuccess={isSuccess}
+          />
         </section>
       </main>
     </MainLayout>
