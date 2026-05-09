@@ -32,8 +32,7 @@ const ProfileSection = () => {
               className="w-full h-full object-cover"
               src={
                 profile?.profile_image &&
-                profile.profile_image !==
-                  `${minioBaseUrl}/take-home-test/profile/null`
+                profile.profile_image !== `${minioBaseUrl}/take-home-test/null`
                   ? profile.profile_image
                   : defaultProfile
               }
